@@ -46,55 +46,7 @@ export default {
         },
       },
 
-      lists: [
-        { state: "pre-loaded", id: "1", name: "List 1" },
-        { state: "pre-loaded", id: "2", name: "List 2" },
-        {
-          state: "fully-loaded",
-          name: "Hallo Welt",
-          id: "3",
-          description: "Eine Liste mit Hallo Welt",
-          columns: [
-            { name: "Spalte 1", required: true },
-            { name: "Spalte 2", required: false },
-            { name: "Spalte 3", required: true },
-            { name: "Spalte 4"}
-          ],
-          maxRows: 10,
-          rows: [
-            {
-              "Spalte 1": "Hallo",
-              "Spalte 2": "Welt",
-              "Spalte 3": "!",
-              "Spalte 4": "Ja!",
-            },
-            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
-            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
-            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
-            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
-            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
-            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
-            {
-              "Spalte 1": "Hallo",
-              "Spalte 2": "Welt",
-              "Spalte 3": "!",
-              "Spalte 4": "Ja!",
-            },
-            {
-              "Spalte 1": "Hallo",
-              "Spalte 2": "Welt",
-              "Spalte 3": "!",
-              "Spalte 4": "Nein",
-            },
-            {
-              "Spalte 1": "Hallo",
-              "Spalte 2": "Welt",
-              "Spalte 3": "!",
-              "Spalte 4": "Nein",
-            },
-          ],
-        },
-      ] as List[],
+      lists: [] as List[],
 
       rules: {
         required: (v) => !!v || "This field is required",
@@ -115,6 +67,12 @@ export default {
         },
         maxRowCount: null,
       },
+
+      dataAddForm: {
+        listId: "",
+        listIndex: 0,
+        show: false,
+      }
     };
   },
   methods: {
@@ -168,6 +126,9 @@ export default {
     async fullyLoadList(index: number) {
       // TODO: Fetch list data from server
     },
+    openInsertDialog(index: number) {
+
+    }
   },
   mounted() {
     if (!this.spaceId || !this.token) {
@@ -315,6 +276,7 @@ export default {
           </VExpansionPanelTitle>
           <VExpansionPanelText>
             <p>{{ list.description }}</p>
+            <VBtn color="primary" @click="openInsertDialog(index)">Insert data</VBtn>
             <VDataTable
               :headers="
                 list.columns.map((column) => ({
@@ -376,6 +338,9 @@ export default {
         </VCardActions>
       </VForm>
     </VCard>
+  </VDialog>
+  <VDialog v-model="dataAddForm.show">
+    
   </VDialog>
 </template>
 
