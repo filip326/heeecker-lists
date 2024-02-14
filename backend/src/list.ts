@@ -224,30 +224,60 @@ function listRoutes(app: Express, db: Db) {
       return;
     }
 
-    const { success, row } = validateRowInsert(req.body);
+    const { success, row } = await validateRowInsert(
+      req.body,
+      list.columns,
+      (key, value) => {
+        for (const r of list.rows) {
+          if (r[key] === value) {
+            return true;
+          }
+        }
+        return false;
+      }
+    );
     if (!success || !row) {
       res.status(400).send("Bad Request");
       return;
     }
 
-    list.rows.push(row);
     const insertData = { ...list.rows, _timestamp: Date.now() }; // todo fix type
+    list.rows.push(insertData);
     await db
       .collection<List>("lists")
-      .updateOne({ _id: new ObjectId(listId) }, { $set: { rows: insertData } });
+      .updateOne({ _id: new ObjectId(listId) }, { $push: { rows: insertData } });
     res.json({ success: true });
   });
 }
 
-function validateRowInsert(r: { [key: string]: string }): {
-  success: boolean;
-  row: {
-    [key: string]: string;
-  } | null;
+function validateRowInsert(
+  body: any,
+  columns: ListColumn[],
+  exists: (key: string, value: string) => boolean
+): {
+    success: boolean;
+    row: any | null;
 } {
-  // todo: validate
+  let newPayload: any = {};
 
-  return { success: false, row: null };
+  for (const c of columns) {
+    let value = body[c.name];
+    if (c.required && !value) {
+      return { success: false, row: null };
+    }
+    if (value && typeof value !== "string") {
+      return { success: false, row: null };
+    }
+    if (c.regexTest && value && !new RegExp(c.regexTest).test(value)) {
+      return { success: false, row: null };
+    }
+    if (c.unique && value && exists(c.name, value)) {
+      return { success: false, row: null };
+    }
+    newPayload[c.name] = value;
+  }
+
+  return { success: true, row: newPayload };
 }
 
 export { listRoutes, List, ListColumn };
