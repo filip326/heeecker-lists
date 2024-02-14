@@ -22,13 +22,7 @@ interface List {
   description: string;
   columns: ListColumn[];
   maxRows: number;
-<<<<<<< HEAD
-  rows: {
-    [key: string]: string;
-  }[]; // todo fix type
-=======
   rows: (any & { _timestamp: number })[];
->>>>>>> ee036c6a0d5c5f45f5768b4be662b998f9c9f49d
 }
 
 function listRoutes(app: Express, db: Db) {
