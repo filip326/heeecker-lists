@@ -5,6 +5,7 @@ config();
 import { MongoClient } from "mongodb";
 import { spaceRoutes } from "./space";
 import { existsSync, readFileSync } from "fs";
+import { listRoutes } from "./list";
 
 const app = express();
 
@@ -56,6 +57,7 @@ async function main() {
   app.use(express.urlencoded({ extended: false }));
 
   spaceRoutes(app, db);
+  listRoutes(app, db);
 
   app.listen(port, () => {
     console.info(`Server is running on port ${port}`);
