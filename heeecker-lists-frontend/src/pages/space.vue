@@ -235,16 +235,16 @@ export default {
         this.spaceData = {
           admin: {
             isAdmin: data.tokenType === "admin",
-            adminUrl: data.adminUrlToken,
-            shareableUrl: data.shareableUrlToken,
+            adminUrl: `${window.location.protocol}//${window.location.hostname}/space?spaceId=${this.spaceId}&token=${data.adminUrlToken}`,
+            shareableUrl: `${window.location.protocol}//${window.location.hostname}/space?spaceId=${this.spaceId}&token=${data.sharableAccessToken}`,
           },
           name: data.name,
           description: data.description,
           createdBy: data.createdBy,
           ownerContactMail: data.ownerContactMail,
-          deletionDate: data.deletionTimestampMs,
+          deletionDate: data.deleteOnTimestampMs,
           createdAt: data.createdOnTimestampMs,
-          modifiedAt: data.modifiedOnTimestampMs,
+          modifiedAt: data.lastModifiedOnTimestampMs,
         };
         fetch(`/api/space/${this.spaceId}/lists?token=${this.token}`)
           .then((response) => response.json())
@@ -263,6 +263,8 @@ export default {
       try {
         return format(new Date(this.spaceData.deletionDate), "yyyy-MM-dd");
       } catch (e) {
+        console.log(e);
+        console.log(this.spaceData.deletionDate);
         return "Err";
       }
     },
@@ -270,6 +272,8 @@ export default {
       try {
         return format(new Date(this.spaceData.modifiedAt), "yyyy-MM-dd");
       } catch (e) {
+        console.log(e);
+        console.log(this.spaceData.modifiedAt);
         return "Err";
       }
     },
@@ -277,6 +281,8 @@ export default {
       try {
         return format(new Date(this.spaceData.createdAt), "yyyy-MM-dd");
       } catch (e) {
+        console.log(e);
+        console.log(this.spaceData.createdAt);
         return "Err";
       }
     },
@@ -419,6 +425,13 @@ export default {
             />
           </VExpansionPanelText>
         </template>
+      </VExpansionPanel>
+      <VExpansionPanel v-if="spaceData.admin.isAdmin">
+        <VExpansionPanelTitle>Admin</VExpansionPanelTitle>
+        <VExpansionPanelText>
+          <p><strong>Admin URL:</strong> {{ spaceData.admin.adminUrl }}</p>
+          <p><strong>Shareable URL:</strong> {{ spaceData.admin.shareableUrl }}</p>
+        </VExpansionPanelText>
       </VExpansionPanel>
     </VExpansionPanels>
   </div>
