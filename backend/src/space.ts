@@ -57,10 +57,13 @@ function spaceRoutes(app: Express, db: Db) {
       ownerContactMail: space.ownerContactMail,
       ...(accessToken === space.adminUrlToken // include tokens only if the request is made with the admin token
         ? {
+            tokenType: "admin",
             adminUrlToken: space.adminUrlToken,
             sharableAccessToken: space.sharableAccessToken,
           }
-        : {}),
+        : {
+            tokenType: "shareable"
+        }),
     });
   });
 
