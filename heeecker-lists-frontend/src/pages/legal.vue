@@ -2,7 +2,7 @@
 export default {
   data() {
     return {
-      legalText: `Loading legal text... Please wait.`,
+      legalText: `<p>Loading legal text... Please wait.</p>`,
     };
   },
   async beforeCreate() {
@@ -14,6 +14,7 @@ export default {
 <template>
     <div>
         <h1>Impressum und Datenschutz</h1>
-        <p>{{ legalText }}</p>
+        <!-- display the legal text as html -->
+        <div v-html="legalText"></div>
     </div>
 </template>

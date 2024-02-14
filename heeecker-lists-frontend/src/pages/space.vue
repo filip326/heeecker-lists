@@ -374,6 +374,7 @@ export default {
           <VExpansionPanelText>
             <p>{{ list.description }}</p>
             <VBtn color="primary" @click="openInsertDialog(index)"
+            :disabled="list.maxRows !== undefined && list.rows.length >= list.maxRows"
               >Insert data</VBtn
             >
             <VDataTable

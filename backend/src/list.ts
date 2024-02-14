@@ -266,7 +266,10 @@ function validateRowInsert(
 
   for (const c of columns) {
     let value = body[c.name];
-    if (c.required && !value) {
+    if (!value || value === "" || value.trim() === "") {
+        value = "";
+    }
+    if (c.required && value === "") {
       return { success: false, row: null };
     }
     if (value && typeof value !== "string") {
@@ -277,6 +280,9 @@ function validateRowInsert(
     }
     if (c.unique && value && exists(c.name, value)) {
       return { success: false, row: null };
+    }
+    if (value === "") {
+        value = "n/a";
     }
     newPayload[c.name] = value;
   }
