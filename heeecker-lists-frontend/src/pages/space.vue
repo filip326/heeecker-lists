@@ -14,7 +14,7 @@ type List =
       description?: string;
       columns: ListColumn[];
       maxRows?: number;
-      rows: any[];
+      rows: (any & { _timestamp: number })[];
     };
 
 type ListColumn = {
