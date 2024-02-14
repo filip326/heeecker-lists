@@ -89,6 +89,9 @@ export default {
           regexTest?: string;
           required: boolean;
         }[],
+        loading: false,
+        success: false,
+        error: false,
       },
     };
   },
@@ -156,6 +159,7 @@ export default {
       }));
       this.dataAddForm.show = true;
     },
+    async pushData(index: number) {},
   },
   mounted() {
     if (!this.spaceId || !this.token) {
@@ -373,7 +377,7 @@ export default {
       <VCardTitle> Insert Data </VCardTitle>
       <VForm @submit.prevent>
         <VCardText>
-          <VTextField
+            <VTextField
             v-for="(textField, index) in dataAddForm.textFields"
             :key="index"
             :label="textField.name"
@@ -382,15 +386,21 @@ export default {
               textField.required ? rules.required : () => true,
               (value: string) => {
                 if (textField.regexTest) {
-                  const regex = new RegExp(textField.regexTest);
+                    const regex = new RegExp(textField.regexTest);
                   if (!regex.test(value)) {
                     return `The value does not match the regex test: ${textField.regexTest}`;
                   }
                 }
                 return true;
-              },
+            },
             ]"
-          />
+            />
+            <VAlert type="info">
+              You are about to insert data into a list. Please make sure that
+              the data is correct, since only the admin can delete or edit it. By
+              inserting data, you agree to the privacy policy. Data inserted into
+              the list will be visible to everyone with the link to the list.
+            </VAlert>
         </VCardText>
         <VCardActions>
           <VSpacer />
@@ -398,6 +408,28 @@ export default {
           <VSpacer />
         </VCardActions>
       </VForm>
+    </VCard>
+  </VDialog>
+  <VDialog v-model="dataAddForm.success">
+    <VCard>
+      <VCardTitle>Success</VCardTitle>
+      <VCardSubtitle>
+        The data was successfully inserted into the list.
+      </VCardSubtitle>
+      <VCardActions>
+        <VBtn @click="dataAddForm.success = false">Close</VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
+  <VDialog v-model="dataAddForm.error">
+    <VCard>
+      <VCardTitle>Error</VCardTitle>
+      <VCardSubtitle>
+        An error occured while inserting the data. Please try again later.
+      </VCardSubtitle>
+      <VCardActions>
+        <VBtn @click="dataAddForm.error = false">Close</VBtn>
+      </VCardActions>
     </VCard>
   </VDialog>
 </template>
