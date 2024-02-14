@@ -11,6 +11,7 @@ interface Space {
   cretedBy: string;
   adminUrlToken: string; // admin url token, used to access admin page
   sharableAccessToken: string; // sharable access token, used to share the space with others
+  ownerContactMail: string; // owner contact mail
 }
 
 function spaceRoutes(app: Express, db: Db) {
@@ -53,6 +54,7 @@ function spaceRoutes(app: Express, db: Db) {
       lastModifiedOnTimestampMs: space.lastModifiedOnTimestampMs,
       createdBy: space.cretedBy,
       deleteOnTimestampMs: space.deleteOnTimestampMs,
+      ownerContactMail: space.ownerContactMail,
       ...(accessToken === space.adminUrlToken // include tokens only if the request is made with the admin token
         ? {
             adminUrlToken: space.adminUrlToken,
@@ -64,11 +66,12 @@ function spaceRoutes(app: Express, db: Db) {
 
   app.post("/api/space", async (req, res) => {
     // needs to contain a name, description and createdBy
-    const { name, description, createdBy } = req.body;
+    const { name, description, createdBy, ownerContactMail } = req.body;
     if (
       typeof name !== "string" ||
       typeof description !== "string" ||
-      typeof createdBy !== "string"
+      typeof createdBy !== "string" ||
+      typeof ownerContactMail !== "string"
     ) {
       res.status(400).send("Bad Request");
       return;
@@ -78,7 +81,15 @@ function spaceRoutes(app: Express, db: Db) {
     const sharableAccessToken = randomBytes(32).toString("base64url");
 
     const deletionDate = // default to 30 days from now, except if the user specifies a date that is less than 60 days from now on
-        (req.body.deletionDate && typeof req.body.deletionDate === "number" && req.body.deletionDate < Date.now() + 1000 * 60 * 60 * 24 * 60 /* 60 days */)
+      req.body.deletionDate &&
+      typeof req.body.deletionDate === "number" &&
+      req.body.deletionDate <
+        Date.now() +
+          1000 *
+            60 *
+            60 *
+            24 *
+            62 /* 60 days, 62 days to improve UX in case there is a small time zone problem or similar */
         ? req.body.deletionDate
         : Date.now() + 1000 * 60 * 60 * 24 * 30; // 30 days
 
@@ -91,6 +102,7 @@ function spaceRoutes(app: Express, db: Db) {
       cretedBy: createdBy,
       adminUrlToken: adminAccessToken,
       sharableAccessToken,
+      ownerContactMail,
     };
 
     const result = await db
@@ -116,7 +128,4 @@ function spaceRoutes(app: Express, db: Db) {
   });
 }
 
-export {
-    Space,
-    spaceRoutes
-}
+export { Space, spaceRoutes };
