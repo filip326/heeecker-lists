@@ -4,6 +4,7 @@ config();
 
 import { MongoClient } from "mongodb";
 import { spaceRoutes } from "./space";
+import { existsSync, readFileSync } from "fs";
 
 const app = express();
 
@@ -28,6 +29,16 @@ if (!process.env.PUBLIC_DIR) {
 async function main() {
   const dbClient = await MongoClient.connect(mongoUrl);
   const db = dbClient.db("heeecker-lists");
+
+  if (!existsSync("./legal.txt")) {
+    console.error("The legal.txt file does not exist. Please create it and add your imprint and privacy policy.");
+    process.exit(1);
+  }
+
+  app.get("/api/legal", (req, res) => {
+    res.setHeader("Content-Type", "text/plain");
+    res.send(readFileSync("./legal.txt", "utf-8"));
+  })
 
   app.use((req, res, next) => {
     // does it begin with /api?
