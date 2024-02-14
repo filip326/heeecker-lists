@@ -22,7 +22,9 @@ interface List {
   description: string;
   columns: ListColumn[];
   maxRows: number;
-  rows: any[];
+  rows: {
+    [key: string]: string;
+  }[]; // todo fix type
 }
 
 function listRoutes(app: Express, db: Db) {
@@ -180,6 +182,74 @@ function listRoutes(app: Express, db: Db) {
     const returned = await db.collection<List>("lists").insertOne(newList);
     res.json({ id: returned.insertedId.toHexString() });
   });
+
+  app.post("/api/space/:spaceId/list/:listId/row", async (req, res) => {
+    const accessToken = req.query.token;
+    const spaceId = req.params.spaceId;
+    const listId = req.params.listId;
+
+    if (!accessToken || typeof accessToken !== "string") {
+      res.status(400).send("Bad Request");
+      return;
+    }
+    if (!ObjectId.isValid(spaceId) || !ObjectId.isValid(listId)) {
+      res.status(400).send("Bad Request");
+      return;
+    }
+
+    const space = await db
+      .collection("spaces")
+      .findOne({
+        _id: new ObjectId(spaceId),
+        $or: [
+          { adminUrlToken: accessToken },
+          { sharableAccessToken: accessToken },
+        ],
+      })
+      .catch(() => {
+        res.status(500).send("Internal Server Error");
+        return;
+      });
+    if (!space) {
+      res.status(404).send("Not Found");
+      return;
+    }
+    const list = await db
+      .collection<List>("lists")
+      .findOne({ _id: new ObjectId(listId) })
+      .catch(() => {
+        res.status(500).send("Internal Server Error");
+        return;
+      });
+    if (!list) {
+      res.status(404).send("Not Found");
+      return;
+    }
+
+    const { success, row } = validateRowInsert(req.body);
+    if (!success || !row) {
+      res.status(400).send("Bad Request");
+      return;
+    }
+
+    list.rows.push(row);
+    const insertData = { ...list.rows, _timestamp: Date.now() }; // todo fix type
+    await db
+      .collection<List>("lists")
+      .updateOne({ _id: new ObjectId(listId) }, { $set: { rows: insertData } });
+    res.json({ success: true });
+  });
+}
+
+function validateRowInsert(r: { [key: string]: string }): {
+  success: boolean;
+  row: {
+    [key: string]: string;
+  } | null;
+} {
+  // todo: validate
+
+  return { success: false, row: null };
 }
 
 export { listRoutes, List, ListColumn };
