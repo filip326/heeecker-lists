@@ -49,7 +49,7 @@ export default {
       lists: [] as List[],
 
       rules: {
-        required: (v) => !!v || "This field is required",
+        required: (v: string) => !!v || "This field is required",
       },
 
       listAddForm: {
@@ -272,7 +272,7 @@ export default {
           ><VIcon>mdi-plus</VIcon>Liste Erstellen</VExpansionPanelTitle
         >
         <VExpansionPanelText>
-          <VAlert type="info" border="left">
+          <VAlert type="info" border="start">
             Nur Admins können Listen erstellen.
           </VAlert>
           <br />
