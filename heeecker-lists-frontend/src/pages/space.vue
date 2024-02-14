@@ -228,6 +228,7 @@ export default {
   },
   mounted() {
     if (!this.spaceId || !this.token) {
+      // @ts-ignore
       this.$router.push("/");
     }
   },
