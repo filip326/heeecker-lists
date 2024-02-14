@@ -1,19 +1,21 @@
 <script lang="ts">
 import { format } from "date-fns/format";
 
-type List = {
-    state: "pre-loaded";
-    id: string;
-    name: string;
-} | {
-    state: "fully-loaded";
-    id: string;
-    name: string;
-    description?: string;
-    columns: ListColumn[];
-    maxRows?: number;
-    rows: any[];
-}
+type List =
+  | {
+      state: "pre-loaded";
+      id: string;
+      name: string;
+    }
+  | {
+      state: "fully-loaded";
+      id: string;
+      name: string;
+      description?: string;
+      columns: ListColumn[];
+      maxRows?: number;
+      rows: (any & { _timestamp: number })[];
+    };
 
 type ListColumn = {
   name: string;
@@ -46,7 +48,52 @@ export default {
 
       lists: [
         { state: "pre-loaded", id: "1", name: "List 1" },
-        { state: "pre-loaded", id: "2", name: "List 2" }
+        { state: "pre-loaded", id: "2", name: "List 2" },
+        {
+          state: "fully-loaded",
+          name: "Hallo Welt",
+          id: "3",
+          description: "Eine Liste mit Hallo Welt",
+          columns: [
+            { name: "Spalte 1", required: true },
+            { name: "Spalte 2", required: false },
+            { name: "Spalte 3", required: true },
+            { name: "Spalte 4"}
+          ],
+          maxRows: 10,
+          rows: [
+            {
+              "Spalte 1": "Hallo",
+              "Spalte 2": "Welt",
+              "Spalte 3": "!",
+              "Spalte 4": "Ja!",
+            },
+            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
+            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
+            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
+            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
+            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
+            { "Spalte 1": "Hallo", "Spalte 2": "Welt", "Spalte 3": "!" },
+            {
+              "Spalte 1": "Hallo",
+              "Spalte 2": "Welt",
+              "Spalte 3": "!",
+              "Spalte 4": "Ja!",
+            },
+            {
+              "Spalte 1": "Hallo",
+              "Spalte 2": "Welt",
+              "Spalte 3": "!",
+              "Spalte 4": "Nein",
+            },
+            {
+              "Spalte 1": "Hallo",
+              "Spalte 2": "Welt",
+              "Spalte 3": "!",
+              "Spalte 4": "Nein",
+            },
+          ],
+        },
       ] as List[],
 
       rules: {
@@ -119,8 +166,8 @@ export default {
       this.listAddForm.columnEditor.open = false;
     },
     async fullyLoadList(index: number) {
-        // TODO: Fetch list data from server
-    }
+      // TODO: Fetch list data from server
+    },
   },
   mounted() {
     if (!this.spaceId || !this.token) {
@@ -254,26 +301,31 @@ export default {
       </VExpansionPanel>
       <VExpansionPanel v-for="(list, index) in lists" v-bind:key="index">
         <template v-if="list.state === 'pre-loaded'">
-            <VExpansionPanelTitle
-                @click="fullyLoadList(index)"
-            >
-                {{ list.name }}
-            </VExpansionPanelTitle>
-            <VExpansionPanelText>
-                <VProgressCircular indeterminate color="primary" /> Liste wird geladen...
-            </VExpansionPanelText>
+          <VExpansionPanelTitle @click="fullyLoadList(index)">
+            {{ list.name }}
+          </VExpansionPanelTitle>
+          <VExpansionPanelText>
+            <VProgressCircular indeterminate color="primary" /> Liste wird
+            geladen...
+          </VExpansionPanelText>
         </template>
         <template v-else-if="list.state === 'fully-loaded'">
-            <VExpansionPanelTitle>
-                {{ list.name }}
-            </VExpansionPanelTitle>
-            <VExpansionPanelText>
-                <p>{{ list.description }}</p>
-                <VDataTable
-                    :headers="list.columns.map(column => column.name)"
-                    :items="list.rows"
-                />
-            </VExpansionPanelText>
+          <VExpansionPanelTitle>
+            {{ list.name }}
+          </VExpansionPanelTitle>
+          <VExpansionPanelText>
+            <p>{{ list.description }}</p>
+            <VDataTable
+              :headers="
+                list.columns.map((column) => ({
+                  title: column.name,
+                  value: column.name,
+                  key: column.name,
+                }))
+              "
+              :items="list.rows"
+            />
+          </VExpansionPanelText>
         </template>
       </VExpansionPanel>
     </VExpansionPanels>
