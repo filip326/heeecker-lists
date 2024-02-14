@@ -46,18 +46,7 @@ export default {
         },
       },
 
-      lists: [
-        {
-          state: "fully-loaded",
-          id: "1",
-          name: "List 1",
-          columns: [
-            { name: "Column 1", required: true, unique: false },
-            { name: "Nein", required: true, regexTest: "^nein$" },
-          ],
-          rows: [],
-        },
-      ] as List[],
+      lists: [] as List[],
 
       rules: {
         required: (v) => !!v || "This field is required",
@@ -144,7 +133,23 @@ export default {
       this.listAddForm.columnEditor.open = false;
     },
     async fullyLoadList(index: number) {
-      // TODO: Fetch list data from server
+      // get the list id
+      const list = this.lists[index];
+      if (!list || list.state !== "pre-loaded") return;
+      const response = await fetch(
+        `/api/spaces/${this.spaceId}/lists/${list.id}?token=${this.token}`,
+      );
+      if (!response.ok) return;
+      const data = await response.json();
+      this.lists[index] = {
+        state: "fully-loaded",
+        id: list.id,
+        name: list.name,
+        description: data.description,
+        columns: data.columns,
+        maxRows: data.maxRows,
+        rows: data.rows,
+      };
     },
     openInsertDialog(index: number) {
       const list = this.lists[index];
@@ -159,7 +164,67 @@ export default {
       }));
       this.dataAddForm.show = true;
     },
-    async pushData(index: number) {},
+    async pushData() {
+      if (
+        !this.lists[this.dataAddForm.listIndex] ||
+        this.lists[this.dataAddForm.listIndex].state !== "fully-loaded"
+      ) {
+        this.dataAddForm.error = true;
+        return;
+      }
+      const pushUrl = `/api/spaces/${this.spaceId}/lists/${this.dataAddForm.listId}/data?token=${this.token}`;
+      const payload = this.dataAddForm.textFields.reduce(
+        (acc, cur) => {
+          acc[cur.name] = cur.value;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+      this.dataAddForm.loading = true;
+      const response = await fetch(pushUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      this.dataAddForm.loading = false;
+      if (response.ok) {
+        this.dataAddForm.success = true;
+        // @ts-ignore ignore the error bc typescript is not smart enough to understand that the list is fully loaded
+        this.lists[this.dataAddForm.listIndex].rows.push({
+          ...payload,
+          _timestamp: Date.now(),
+        });
+      } else {
+        this.dataAddForm.error = true;
+      }
+    },
+    async createList() {
+      const response = await fetch(
+        `/api/spaces/${this.spaceId}/lists?token=${this.token}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: this.listAddForm.name,
+            description: this.listAddForm.description,
+            columns: this.listAddForm.columns,
+            maxRowCount: this.listAddForm.maxRowCount,
+          }),
+        },
+      );
+      if (response.ok) {
+        const data = await response.json();
+        this.lists.push({
+          state: "pre-loaded",
+          id: data.id,
+          name: data.name,
+        });
+      }
+    },
   },
   mounted() {
     if (!this.spaceId || !this.token) {
@@ -377,7 +442,7 @@ export default {
       <VCardTitle> Insert Data </VCardTitle>
       <VForm @submit.prevent>
         <VCardText>
-            <VTextField
+          <VTextField
             v-for="(textField, index) in dataAddForm.textFields"
             :key="index"
             :label="textField.name"
@@ -386,25 +451,35 @@ export default {
               textField.required ? rules.required : () => true,
               (value: string) => {
                 if (textField.regexTest) {
-                    const regex = new RegExp(textField.regexTest);
+                  const regex = new RegExp(textField.regexTest);
                   if (!regex.test(value)) {
                     return `The value does not match the regex test: ${textField.regexTest}`;
                   }
                 }
                 return true;
-            },
+              },
             ]"
-            />
-            <VAlert type="info">
-              You are about to insert data into a list. Please make sure that
-              the data is correct, since only the admin can delete or edit it. By
-              inserting data, you agree to the privacy policy. Data inserted into
-              the list will be visible to everyone with the link to the list.
-            </VAlert>
+          />
+          <VAlert type="info">
+            You are about to insert data into a list. Please make sure that the
+            data is correct, since only the admin can delete or edit it. By
+            inserting data, you agree to the privacy policy. Data inserted into
+            the list will be visible to everyone with the link to the list.
+          </VAlert>
         </VCardText>
         <VCardActions>
           <VSpacer />
-          <VBtn type="submit" color="primary" variant="elevated">Insert</VBtn>
+          <VBtn
+            type="submit"
+            color="primary"
+            variant="elevated"
+            :loading="dataAddForm.loading"
+            @click="pushData"
+            >Insert</VBtn
+          >
+          <VBtn type="button" @click="dataAddForm.show = false" variant="text"
+            >Cancel</VBtn
+          >
           <VSpacer />
         </VCardActions>
       </VForm>

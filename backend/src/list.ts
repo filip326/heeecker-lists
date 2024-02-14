@@ -119,6 +119,7 @@ function listRoutes(app: Express, db: Db) {
     }
 
     res.json({
+      id: list._id.toHexString(),
       name: list.name,
       description: list.description,
       columns: list.columns,
@@ -245,7 +246,10 @@ function listRoutes(app: Express, db: Db) {
     list.rows.push(insertData);
     await db
       .collection<List>("lists")
-      .updateOne({ _id: new ObjectId(listId) }, { $push: { rows: insertData } });
+      .updateOne(
+        { _id: new ObjectId(listId) },
+        { $push: { rows: insertData } }
+      );
     res.json({ success: true });
   });
 }
@@ -255,8 +259,8 @@ function validateRowInsert(
   columns: ListColumn[],
   exists: (key: string, value: string) => boolean
 ): {
-    success: boolean;
-    row: any | null;
+  success: boolean;
+  row: any | null;
 } {
   let newPayload: any = {};
 
