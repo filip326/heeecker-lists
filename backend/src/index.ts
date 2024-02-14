@@ -6,6 +6,7 @@ import { MongoClient } from "mongodb";
 import { spaceRoutes } from "./space";
 import { existsSync, readFileSync } from "fs";
 import { listRoutes } from "./list";
+import { join } from "path";
 
 const app = express();
 
@@ -27,6 +28,8 @@ if (!process.env.PUBLIC_DIR) {
   process.exit(1);
 }
 
+const publicDir = process.env.PUBLIC_DIR;
+
 async function main() {
   const dbClient = await MongoClient.connect(mongoUrl);
   const db = dbClient.db("heeecker-lists");
@@ -36,12 +39,13 @@ async function main() {
     process.exit(1);
   }
 
-  app.get("/api/legal", (req, res) => {
+  app.get("/api/legal", (_, res) => {
     res.setHeader("Content-Type", "text/plain");
     res.send(readFileSync("./legal.txt", "utf-8"));
   })
 
   app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
     // does it begin with /api?
     if (req.path.startsWith("/api")) {
       // if it does, then we should set the content type to application/json
@@ -50,8 +54,13 @@ async function main() {
       next();
       return;
     }
+    if (!existsSync(join(publicDir, req.path))) {
+      // if its not an api call and the file does not exist, send the index.html file
+      res.sendFile("index.html", { root: publicDir });
+      return;
+    }
     // else, send the file the client requested from the public directory
-    res.sendFile(req.path, { root: process.env.PUBLIC_DIR });
+    res.sendFile(req.path, { root: publicDir });
   });
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));

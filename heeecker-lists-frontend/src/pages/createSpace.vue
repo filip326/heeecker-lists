@@ -49,7 +49,7 @@ export default {
         payload.deletionDate = this.deletionDate.getTime();
       }
 
-      const response = await fetch("/api/spaces", {
+      const response = await fetch("/api/space", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

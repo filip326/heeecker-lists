@@ -231,6 +231,24 @@ export default {
       // @ts-ignore
       this.$router.push("/");
     }
+    fetch(`/api/spaces/${this.spaceId}?token=${this.token}`)
+      .then((response) => response.json())
+      .then((data) => {
+        this.spaceData = {
+          admin: {
+            isAdmin: data.tokenType === "admin",
+            adminUrl: data.adminUrlToken,
+            shareableUrl: data.shareableUrlToken,
+          },
+          name: data.name,
+          description: data.description,
+          createdBy: data.createdBy,
+          ownerContactMail: data.ownerContactMail,
+          deletionDate: data.deletionTimestampMs,
+          createdAt: data.createdOnTimestampMs,
+          modifiedAt: data.modifiedOnTimestampMs,
+        };
+      });
   },
   computed: {
     deletionDateFormatted() {
@@ -373,8 +391,12 @@ export default {
           </VExpansionPanelTitle>
           <VExpansionPanelText>
             <p>{{ list.description }}</p>
-            <VBtn color="primary" @click="openInsertDialog(index)"
-            :disabled="list.maxRows !== undefined && list.rows.length >= list.maxRows"
+            <VBtn
+              color="primary"
+              @click="openInsertDialog(index)"
+              :disabled="
+                list.maxRows !== undefined && list.rows.length >= list.maxRows
+              "
               >Insert data</VBtn
             >
             <VDataTable
