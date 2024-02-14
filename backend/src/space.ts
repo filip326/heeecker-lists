@@ -77,12 +77,17 @@ function spaceRoutes(app: Express, db: Db) {
     const adminAccessToken = randomBytes(32).toString("base64url");
     const sharableAccessToken = randomBytes(32).toString("base64url");
 
+    const deletionDate = // default to 30 days from now, except if the user specifies a date that is less than 60 days from now on
+        (req.body.deletionDate && typeof req.body.deletionDate === "number" && req.body.deletionDate < Date.now() + 1000 * 60 * 60 * 24 * 60 /* 60 days */)
+        ? req.body.deletionDate
+        : Date.now() + 1000 * 60 * 60 * 24 * 30; // 30 days
+
     const space: Space = {
       name,
       description,
       createdOnTimestampMs: Date.now(),
       lastModifiedOnTimestampMs: Date.now(),
-      deleteOnTimestampMs: Date.now() + 1000 * 60 * 60 * 24 * 30, // 30 days
+      deleteOnTimestampMs: deletionDate, // up to 60 days from now
       cretedBy: createdBy,
       adminUrlToken: adminAccessToken,
       sharableAccessToken,
