@@ -46,7 +46,18 @@ export default {
         },
       },
 
-      lists: [] as List[],
+      lists: [
+        {
+          state: "fully-loaded",
+          id: "1",
+          name: "List 1",
+          columns: [
+            { name: "Column 1", required: true, unique: false },
+            { name: "Nein", required: true, regexTest: "^nein$" },
+          ],
+          rows: [],
+        },
+      ] as List[],
 
       rules: {
         required: (v) => !!v || "This field is required",
@@ -72,7 +83,13 @@ export default {
         listId: "",
         listIndex: 0,
         show: false,
-      }
+        textFields: [] as {
+          name: string;
+          value: string;
+          regexTest?: string;
+          required: boolean;
+        }[],
+      },
     };
   },
   methods: {
@@ -127,8 +144,18 @@ export default {
       // TODO: Fetch list data from server
     },
     openInsertDialog(index: number) {
-
-    }
+      const list = this.lists[index];
+      if (list.state !== "fully-loaded") return;
+      this.dataAddForm.listId = list.id;
+      this.dataAddForm.listIndex = index;
+      this.dataAddForm.textFields = list.columns.map((column) => ({
+        name: column.name,
+        value: "",
+        regexTest: column.regexTest,
+        required: column.required,
+      }));
+      this.dataAddForm.show = true;
+    },
   },
   mounted() {
     if (!this.spaceId || !this.token) {
@@ -179,7 +206,7 @@ export default {
             Nur Admins können Listen erstellen.
           </VAlert>
           <br />
-          <VForm>
+          <VForm @submit.prevent>
             <VTextField
               label="List Name"
               v-model="listAddForm.name"
@@ -276,7 +303,9 @@ export default {
           </VExpansionPanelTitle>
           <VExpansionPanelText>
             <p>{{ list.description }}</p>
-            <VBtn color="primary" @click="openInsertDialog(index)">Insert data</VBtn>
+            <VBtn color="primary" @click="openInsertDialog(index)"
+              >Insert data</VBtn
+            >
             <VDataTable
               :headers="
                 list.columns.map((column) => ({
@@ -340,7 +369,36 @@ export default {
     </VCard>
   </VDialog>
   <VDialog v-model="dataAddForm.show">
-    
+    <VCard>
+      <VCardTitle> Insert Data </VCardTitle>
+      <VForm @submit.prevent>
+        <VCardText>
+          <VTextField
+            v-for="(textField, index) in dataAddForm.textFields"
+            :key="index"
+            :label="textField.name"
+            v-model="textField.value"
+            :rules="[
+              textField.required ? rules.required : () => true,
+              (value: string) => {
+                if (textField.regexTest) {
+                  const regex = new RegExp(textField.regexTest);
+                  if (!regex.test(value)) {
+                    return `The value does not match the regex test: ${textField.regexTest}`;
+                  }
+                }
+                return true;
+              },
+            ]"
+          />
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn type="submit" color="primary" variant="elevated">Insert</VBtn>
+          <VSpacer />
+        </VCardActions>
+      </VForm>
+    </VCard>
   </VDialog>
 </template>
 
