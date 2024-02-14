@@ -120,8 +120,8 @@ function spaceRoutes(app: Express, db: Db) {
       return;
     }
 
-    const spaceSharableUrl = `${req.protocol}://${req.hostname}/space?spaceId=${result.insertedId.toHexString()}?token=${sharableAccessToken}`;
-    const spaceAdminUrl = `${req.protocol}://${req.hostname}/space?spaceId=${result.insertedId.toHexString()}?token=${adminAccessToken}`;
+    const spaceSharableUrl = `${req.protocol}://${req.hostname}/space?spaceId=${result.insertedId.toHexString()}&token=${sharableAccessToken}`;
+    const spaceAdminUrl = `${req.protocol}://${req.hostname}/space?spaceId=${result.insertedId.toHexString()}&token=${adminAccessToken}`;
 
     res.json({
       spaceId: result.insertedId.toHexString(),

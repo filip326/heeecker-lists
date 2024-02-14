@@ -1,4 +1,5 @@
 <script lang="ts">
+import { tSThisType } from "@babel/types";
 import { format } from "date-fns/format";
 
 type List =
@@ -28,8 +29,8 @@ type ListColumn = {
 export default {
   data() {
     return {
-      spaceId: this.$route.query.spaceId || null,
-      token: this.$route.query.token || null,
+      spaceId: "",
+      token: "",
       spaceData: {
         name: "Space-Name",
         description:
@@ -96,14 +97,11 @@ export default {
       if (index !== undefined && index !== -1) {
         if (index >= this.listAddForm.columns.length) return;
         this.listAddForm.columnEditor.target = index;
-        this.listAddForm.columnEditor.name =
-          this.listAddForm.columns[index].name;
-        this.listAddForm.columnEditor.required =
-          this.listAddForm.columns[index].required;
+        this.listAddForm.columnEditor.name = this.listAddForm.columns[index].name;
+        this.listAddForm.columnEditor.required = this.listAddForm.columns[index].required;
         this.listAddForm.columnEditor.description =
           this.listAddForm.columns[index].description ?? "";
-        this.listAddForm.columnEditor.unique =
-          this.listAddForm.columns[index].unique;
+        this.listAddForm.columnEditor.unique = this.listAddForm.columns[index].unique;
         this.listAddForm.columnEditor.regexTest =
           this.listAddForm.columns[index].regexTest ?? "";
       }
@@ -113,21 +111,17 @@ export default {
         this.listAddForm.columns.push({
           name: this.listAddForm.columnEditor.name,
           required: this.listAddForm.columnEditor.required,
-          description:
-            this.listAddForm.columnEditor.description.trim() || undefined,
+          description: this.listAddForm.columnEditor.description.trim() || undefined,
           unique: this.listAddForm.columnEditor.unique,
-          regexTest:
-            this.listAddForm.columnEditor.regexTest.trim() || undefined,
+          regexTest: this.listAddForm.columnEditor.regexTest.trim() || undefined,
         });
       } else {
         this.listAddForm.columns[this.listAddForm.columnEditor.target] = {
           name: this.listAddForm.columnEditor.name,
           required: this.listAddForm.columnEditor.required,
-          description:
-            this.listAddForm.columnEditor.description.trim() || undefined,
+          description: this.listAddForm.columnEditor.description.trim() || undefined,
           unique: this.listAddForm.columnEditor.unique,
-          regexTest:
-            this.listAddForm.columnEditor.regexTest.trim() || undefined,
+          regexTest: this.listAddForm.columnEditor.regexTest.trim() || undefined,
         };
       }
       this.listAddForm.columnEditor.open = false;
@@ -137,7 +131,7 @@ export default {
       const list = this.lists[index];
       if (!list || list.state !== "pre-loaded") return;
       const response = await fetch(
-        `/api/spaces/${this.spaceId}/lists/${list.id}?token=${this.token}`,
+        `/api/space/${this.spaceId}/list/${list.id}?token=${this.token}`
       );
       if (!response.ok) return;
       const data = await response.json();
@@ -172,14 +166,11 @@ export default {
         this.dataAddForm.error = true;
         return;
       }
-      const pushUrl = `/api/spaces/${this.spaceId}/lists/${this.dataAddForm.listId}/data?token=${this.token}`;
-      const payload = this.dataAddForm.textFields.reduce(
-        (acc, cur) => {
-          acc[cur.name] = cur.value;
-          return acc;
-        },
-        {} as Record<string, string>,
-      );
+      const pushUrl = `/api/space/${this.spaceId}/list/${this.dataAddForm.listId}/row?token=${this.token}`;
+      const payload = this.dataAddForm.textFields.reduce((acc, cur) => {
+        acc[cur.name] = cur.value;
+        return acc;
+      }, {} as Record<string, string>);
       this.dataAddForm.loading = true;
       const response = await fetch(pushUrl, {
         method: "POST",
@@ -199,10 +190,11 @@ export default {
       } else {
         this.dataAddForm.error = true;
       }
+      this.dataAddForm.show = false;
     },
     async createList() {
       const response = await fetch(
-        `/api/spaces/${this.spaceId}/lists?token=${this.token}`,
+        `/api/space/${this.spaceId}/list?token=${this.token}`,
         {
           method: "POST",
           headers: {
@@ -212,28 +204,34 @@ export default {
             name: this.listAddForm.name,
             description: this.listAddForm.description,
             columns: this.listAddForm.columns,
-            maxRowCount: this.listAddForm.maxRowCount,
+            maxRowCount: parseInt(this.listAddForm.maxRowCount ?? "0"),
           }),
-        },
+        }
       );
       if (response.ok) {
         const data = await response.json();
         this.lists.push({
           state: "pre-loaded",
           id: data.id,
-          name: data.name,
+          name: this.listAddForm.name,
         });
       }
     },
   },
   mounted() {
+    console.log("mounted");
+    this.spaceId = this.$route.query.spaceId as string;
+    this.token = this.$route.query.token as string;
+    console.log(this.spaceId, this.token);
     if (!this.spaceId || !this.token) {
+      console.log("redirecting");
       // @ts-ignore
       this.$router.push("/");
     }
-    fetch(`/api/spaces/${this.spaceId}?token=${this.token}`)
+    fetch(`/api/space/${this.spaceId}?token=${this.token}`)
       .then((response) => response.json())
       .then((data) => {
+        console.log("Loaded space data", data);
         this.spaceData = {
           admin: {
             isAdmin: data.tokenType === "admin",
@@ -248,17 +246,39 @@ export default {
           createdAt: data.createdOnTimestampMs,
           modifiedAt: data.modifiedOnTimestampMs,
         };
+        fetch(`/api/space/${this.spaceId}/lists?token=${this.token}`)
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("Loaded lists", data);
+            this.lists = data.map((list: any) => ({
+              state: "pre-loaded",
+              id: list.id,
+              name: list.name,
+            }));
+          });
       });
   },
   computed: {
     deletionDateFormatted() {
-      return format(this.spaceData.deletionDate, "yyyy-MM-dd");
+      try {
+        return format(new Date(this.spaceData.deletionDate), "yyyy-MM-dd");
+      } catch (e) {
+        return "Err";
+      }
     },
     modifiedDateFormatted() {
-      return format(this.spaceData.modifiedAt, "yyyy-MM-dd");
+      try {
+        return format(new Date(this.spaceData.modifiedAt), "yyyy-MM-dd");
+      } catch (e) {
+        return "Err";
+      }
     },
     createdDateFormatted() {
-      return format(this.spaceData.createdAt, "yyyy-MM-dd");
+      try {
+        return format(new Date(this.spaceData.createdAt), "yyyy-MM-dd");
+      } catch (e) {
+        return "Err";
+      }
     },
   },
 };
@@ -266,13 +286,6 @@ export default {
 
 <template>
   <div class="wrapper">
-    <small>
-      <p>
-        Id: {{ spaceId }} <br />
-        Token: {{ token }}
-      </p>
-    </small>
-
     <h1>{{ spaceData.name }}</h1>
     <p>
       {{ spaceData.description }}
@@ -308,10 +321,7 @@ export default {
               :rules="[rules.required]"
             />
             <h3>Columns</h3>
-            <VBtn
-              @click="openAddColumnDialog(-1)"
-              color="primary"
-              prepend-icon="mdi-plus"
+            <VBtn @click="openAddColumnDialog(-1)" color="primary" prepend-icon="mdi-plus"
               >Add Column</VBtn
             >
             <span v-if="listAddForm.columns.length < 1"
@@ -350,8 +360,8 @@ export default {
                 </tr>
               </tbody>
             </VTable>
-            If you want to limit the amount of rows in this list, you can set a
-            max row count.
+            If you want to limit the amount of rows in this list, you can set a max row
+            count.
             <VTextField
               label="Max Row Count"
               v-model="listAddForm.maxRowCount"
@@ -359,14 +369,14 @@ export default {
               hint="Leave empty for unlimited rows."
             />
             <VAlert type="warning" class="margin-bellow">
-              Please note that you can not change any list properties after
-              creating the list, since this is a future feature and not yet
-              implemented.
+              Please note that you can not change any list properties after creating the
+              list, since this is a future feature and not yet implemented.
             </VAlert>
             <VBtn
               type="submit"
               color="primary"
               :disabled="listAddForm.columns.length < 1"
+              @click="createList"
               >Create List</VBtn
             >
             <span v-if="listAddForm.columns.length < 1"
@@ -381,8 +391,7 @@ export default {
             {{ list.name }}
           </VExpansionPanelTitle>
           <VExpansionPanelText>
-            <VProgressCircular indeterminate color="primary" /> Liste wird
-            geladen...
+            <VProgressCircular indeterminate color="primary" /> Liste wird geladen...
           </VExpansionPanelText>
         </template>
         <template v-else-if="list.state === 'fully-loaded'">
@@ -391,12 +400,11 @@ export default {
           </VExpansionPanelTitle>
           <VExpansionPanelText>
             <p>{{ list.description }}</p>
+            <p v-if="list.maxRows">{{ list.rows.length }} / {{ list.maxRows }}</p>
             <VBtn
               color="primary"
               @click="openInsertDialog(index)"
-              :disabled="
-                list.maxRows !== undefined && list.rows.length >= list.maxRows
-              "
+              :disabled="list.maxRows != undefined && list.rows.length >= list.maxRows"
               >Insert data</VBtn
             >
             <VDataTable
@@ -435,15 +443,9 @@ export default {
             label="Description"
           />
           Do you want to test the value against a regex?
-          <VTextField
-            v-model="listAddForm.columnEditor.regexTest"
-            label="Regex Test"
-          />
+          <VTextField v-model="listAddForm.columnEditor.regexTest" label="Regex Test" />
           Is this value required in this column?
-          <VCheckbox
-            v-model="listAddForm.columnEditor.required"
-            label="Required"
-          />
+          <VCheckbox v-model="listAddForm.columnEditor.required" label="Required" />
           Does the value needs to be unique in this column?
           <VCheckbox v-model="listAddForm.columnEditor.unique" label="Unique" />
         </VCardText>
@@ -485,10 +487,10 @@ export default {
             ]"
           />
           <VAlert type="info">
-            You are about to insert data into a list. Please make sure that the
-            data is correct, since only the admin can delete or edit it. By
-            inserting data, you agree to the privacy policy. Data inserted into
-            the list will be visible to everyone with the link to the list.
+            You are about to insert data into a list. Please make sure that the data is
+            correct, since only the admin can delete or edit it. By inserting data, you
+            agree to the privacy policy. Data inserted into the list will be visible to
+            everyone with the link to the list.
           </VAlert>
         </VCardText>
         <VCardActions>
@@ -512,9 +514,7 @@ export default {
   <VDialog v-model="dataAddForm.success">
     <VCard>
       <VCardTitle>Success</VCardTitle>
-      <VCardSubtitle>
-        The data was successfully inserted into the list.
-      </VCardSubtitle>
+      <VCardSubtitle> The data was successfully inserted into the list. </VCardSubtitle>
       <VCardActions>
         <VBtn @click="dataAddForm.success = false">Close</VBtn>
       </VCardActions>

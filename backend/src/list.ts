@@ -21,7 +21,7 @@ interface List {
   name: string;
   description: string;
   columns: ListColumn[];
-  maxRows: number;
+  maxRows?: number;
   rows: (any & { _timestamp: number })[];
 }
 
@@ -163,7 +163,7 @@ function listRoutes(app: Express, db: Db) {
       typeof list.name !== "string" ||
       typeof list.description !== "string" ||
       !Array.isArray(list.columns) ||
-      typeof list.maxRowCount !== "number"
+      (list.maxRowCount && typeof list.maxRowCount !== "number")
     ) {
       res.status(400).send("Bad Request");
       return;
@@ -173,7 +173,7 @@ function listRoutes(app: Express, db: Db) {
       name: list.name,
       description: list.description,
       space: new ObjectId(spaceId),
-      maxRows: list.maxRowCount,
+      maxRows: list.maxRowCount || undefined,
       rows: [],
       columns: list.columns,
     };
@@ -242,7 +242,7 @@ function listRoutes(app: Express, db: Db) {
       return;
     }
 
-    const insertData = { ...list.rows, _timestamp: Date.now() }; // todo fix type
+    const insertData = { ...row, _timestamp: Date.now() };
     list.rows.push(insertData);
     await db
       .collection<List>("lists")
