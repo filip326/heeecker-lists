@@ -29,7 +29,9 @@
 		"downlevelIteration": true,
 		"declaration": true,
 
-		"pretty": true
+		"pretty": true,
+
+		"esModuleInterop": true
 	},
 	"include": [
 		"typings/**/*",
