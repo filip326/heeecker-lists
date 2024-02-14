@@ -9,6 +9,13 @@ type ListColumn = {
   regexTest?: string;
 };
 
+type listAddForm = {
+  name: string;
+  description: string;
+  columns: ListColumn[];
+  maxRowCount: number | null;
+};
+
 interface List {
   space: ObjectId;
   name: string;
@@ -120,7 +127,59 @@ function listRoutes(app: Express, db: Db) {
     });
   });
 
-  app.post("/api/space/")
+  app.post("/api/space/:spaceId/list", async (req, res) => {
+    const accessToken = req.query.token;
+    const spaceId = req.params.spaceId;
+
+    if (!accessToken || typeof accessToken !== "string") {
+      res.status(400).send("Bad Request");
+      return;
+    }
+
+    if (!ObjectId.isValid(spaceId)) {
+      res.status(400).send("Bad Request");
+      return;
+    }
+
+    const space = await db
+      .collection("spaces")
+      .findOne({
+        _id: new ObjectId(spaceId),
+        adminUrlToken: accessToken,
+      })
+      .catch(() => {
+        res.status(500).send("Internal Server Error");
+        return;
+      });
+
+    if (!space) {
+      res.status(404).send("Not Found");
+      return;
+    }
+
+    const list: listAddForm = req.body;
+    if (
+      typeof list.name !== "string" ||
+      typeof list.description !== "string" ||
+      !Array.isArray(list.columns) ||
+      typeof list.maxRowCount !== "number"
+    ) {
+      res.status(400).send("Bad Request");
+      return;
+    }
+
+    const newList: List = {
+      name: list.name,
+      description: list.description,
+      space: new ObjectId(spaceId),
+      maxRows: list.maxRowCount,
+      rows: [],
+      columns: list.columns,
+    };
+
+    const returned = await db.collection<List>("lists").insertOne(newList);
+    res.json({ id: returned.insertedId.toHexString() });
+  });
 }
 
 export { listRoutes, List, ListColumn };
