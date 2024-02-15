@@ -217,6 +217,15 @@ export default {
         });
       }
     },
+    async deleteSpace() {
+      const response = await fetch(`/api/space/${this.spaceId}?token=${this.token}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        // @ts-ignore
+        this.$router.push("/");
+      }
+    },
   },
   mounted() {
     console.log("mounted");
@@ -431,6 +440,7 @@ export default {
         <VExpansionPanelText>
           <p><strong>Admin URL:</strong> {{ spaceData.admin.adminUrl }}</p>
           <p><strong>Shareable URL:</strong> {{ spaceData.admin.shareableUrl }}</p>
+          <VBtn color="error" @click="deleteSpace">Delete Space</VBtn>
         </VExpansionPanelText>
       </VExpansionPanel>
     </VExpansionPanels>
