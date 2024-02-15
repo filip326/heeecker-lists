@@ -11,7 +11,7 @@ const router = createRouter({
   routes: [
     {
       path: "/",
-      component: () => import("../pages/createSpace.vue")
+      component: () => import("../pages/createSpace.vue"),
     },
     {
       path: "/space",
