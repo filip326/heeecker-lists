@@ -129,6 +129,39 @@ function spaceRoutes(app: Express, db: Db) {
       spaceAdminUrl,
     });
   });
+
+  app.delete("/api/space/:spaceId", async (req, res) => {
+    const spaceId = req.params.spaceId;
+    const accessToken = req.query.token;
+    if (!accessToken || typeof accessToken !== "string") {
+      res.status(400).send("Bad Request");
+      return;
+    }
+
+    if (!ObjectId.isValid(spaceId)) {
+      res.status(400).send("Bad Request");
+      return;
+    }
+
+    const space = await db
+      .collection<Space>("spaces")
+      .findOne({
+        _id: new ObjectId(spaceId),
+        adminUrlToken: accessToken,
+      })
+      .catch(() => {
+        res.status(500).send("Internal Server Error");
+        return;
+      });
+
+    if (!space) {
+      res.status(404).send("Not Found");
+      return;
+    }
+
+    await db.collection<Space>("spaces").deleteOne({ _id: new ObjectId(spaceId) });
+    res.status(204).send("No Content");
+  });
 }
 
 export { Space, spaceRoutes };
